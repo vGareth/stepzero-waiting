@@ -5,6 +5,30 @@ export async function onRequestPost(context) {
     // Parse the request body
     const body = await request.json();
     const { firstName, email } = body;
+
+    // --- Turnstile verification (ADD THIS) ---
+    // Expect token in body as 'cf-turnstile-response' or 'turnstileToken'
+    const token = body['cf-turnstile-response'] || body.turnstileToken || '';
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Bot check failed (missing token)' }), {
+        status: 400, headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: new URLSearchParams({
+        secret: env.TURNSTILE_SECRET,
+        response: token,
+        // (optionally) remoteip: context.request.headers.get('cf-connecting-ip') || ''
+      }),
+    });
+    const outcome = await verifyRes.json();
+    if (!outcome.success) {
+      return new Response(JSON.stringify({ error: 'Bot check failed' }), {
+        status: 400, headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    // --- End Turnstile verification ---
     
     // Validate input
     if (!firstName || !email) {

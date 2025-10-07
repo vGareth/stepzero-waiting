@@ -17,6 +17,9 @@
             overflow: hidden;
         }
 
+        :root{ --muted: rgba(255,255,255,.78); }  /* ADD */
+  * { margin:0; padding:0; box-sizing:border-box; }
+
         .video-background {
             position: fixed;
             top: 0;
@@ -166,6 +169,9 @@
                 required
                 autocomplete="email"
             >
+            <div class="cf-turnstile" data-sitekey="0x4AAAAAAB5Qx2bC4uXR9CfC" data-theme="dark"></div>
+            <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
             <button type="submit">Face the storm first</button>
         </form>
 
@@ -186,9 +192,13 @@
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            // Get Turnstile token (auto-added by the widget)
+    const token = window.turnstile?.getResponse() || '';
             
             const formData = new FormData(form);
             const data = {
+                'cf-turnstile-response': token,
                 firstName: formData.get('firstName'),
                 email: formData.get('email')
             };
@@ -206,15 +216,25 @@
                     successMessage.style.display = 'block';
                     errorMessage.style.display = 'none';
                     form.reset();
+                    window.turnstile?.reset();
                 } else {
                     errorMessage.style.display = 'block';
                     successMessage.style.display = 'none';
+                    window.turnstile?.reset(); 
                 }
             } catch (error) {
                 errorMessage.style.display = 'block';
                 successMessage.style.display = 'none';
+                window.turnstile?.reset();
             }
         });
+        // Optional: respect reduced motion (pause bg video)
+  try {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const vid = document.querySelector('.video-background');
+      vid?.pause(); vid?.removeAttribute('autoplay');
+    }
+  } catch {}
     </script>
 
       <div class="quote">“Stop overthinking, trust the serendipity of life, and keep walking into the storm.”</div>
